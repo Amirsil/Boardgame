@@ -9,7 +9,7 @@ public class Player {
         this.y = y;
     }
      public void walk(int input) {
-        char playerNum = board[y][x];
+        char playerNum = board[x][y];
         int oldX = x, oldY = y;
         board[x][y] = '.';
         switch (input) {
@@ -22,14 +22,18 @@ public class Player {
             if (board[x][y] == '*') {
                 System.out.format("%c is victorious!", playerNum);
             }
+            else if (board[x][y] != '.'){
+                throw new Exception();
+            }
 
-        } catch (Exception ignored) {
+        } catch (Exception e) {
             System.out.println("Illegal move, your turn is over");
             // Revert deletion of player
             x = oldX;
             y = oldY;
         }
         finally{
+            System.out.format("x: %d, y: %d\n", x, y);
             board[x][y] = playerNum;
         }
     }

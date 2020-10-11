@@ -1,8 +1,8 @@
 import java.util.Scanner;
-
+import java.util.concurrent.TimeUnit;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         int size = 10;
         Scanner stdin = new Scanner(System.in);
         char[][] board = new char[size][size];
@@ -21,14 +21,31 @@ public class Main {
 
 
         initializeBoard(board, xRugTopLeftCorner, yRugTopLeftCorner, rugLength, x1, x2, y1, y2);
-        showBoard(board);
 
         Player p1 = new Player(board, x1, y1);
         Player p2 = new Player(board, x2, y2);
-        p1.walk(1);
-        showBoard(board);
-        p2.walk(2);
-        showBoard(board);
+        Player p = p1;
+        System.out.println("Player 1 is first!");
+        Thread.sleep(1000);
+        int input;
+        while (true){
+            showBoard(board);
+            try {
+                input = Integer.parseInt(stdin.nextLine());
+                if (input < 0 || input > 4) {
+                    continue;
+                }
+            } catch (Exception ignore){
+                continue;
+            }
+            p.walk(input);
+            if (p == p1){
+                p = p2;
+            }
+            else {
+                p = p1;
+            }
+        }
 
 
 
@@ -94,6 +111,5 @@ public class Main {
             }
             System.out.println();
         }
-        System.out.println();
     }
 }

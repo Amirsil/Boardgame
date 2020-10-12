@@ -54,10 +54,10 @@ public class Player {
         int oldX = x, oldY = y;
         board[x][y] = ' ';
         switch (direction) {
-            case 1 -> y--;
-            case 2 -> y++;
-            case 3 -> x++;
-            case 4 -> x--;
+            case 1 : y--; break;
+            case 2 : y++; break;
+            case 3 : x++; break;
+            case 4 : x--; break;
         }
         try{
             if (board[x][y] == '*') {

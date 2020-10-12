@@ -1,25 +1,26 @@
 import java.util.Arrays;
 import java.util.Scanner;
 import java.lang.Math;
+import java.util.Random;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {
-        int sizeOfBoard = 10;
+        int sizeOfBoard = 30;
         Scanner stdin = new Scanner(System.in);
         char[][] board = new char[sizeOfBoard][sizeOfBoard];
         int x1, y1; // PlayerA location
         int x2, y2; // PlayerB location
         int xRugTopLeftCorner, yRugTopLeftCorner; // Location of the rug's top left corner
         int rugLength; // Size of the rug
-        Player playingPlayer;
-        Player p1 = new Player(board, -1, -1, '1');;
-        Player p2 = new Player(board, -1, -1, '2');
+        Player playingPlayer, overallWinner;
+        Player player1 = new Player(board,'1');
+        Player player2 = new Player(board,'2');
         int direction;
         boolean isRoundOver;
         boolean isPlayerInsideRug;
         boolean isGameOver = false;
-
         while (!isGameOver) {
+            // Get all the variables necessary to start the game as input
             System.out.println("A new game is starting!");
             x1 = safeInput(stdin, "Player1 x location: ", sizeOfBoard);
             y1 = safeInput(stdin, "Player1 y location:", sizeOfBoard);
@@ -29,16 +30,16 @@ public class Main {
             yRugTopLeftCorner = safeInput(stdin, "Rug top left corner y location:", sizeOfBoard);
             rugLength = safeRugInput(stdin, "Rug size: ", sizeOfBoard, xRugTopLeftCorner, yRugTopLeftCorner);
 
-            p1.setLocation(x1, y1);
-            p2.setLocation(x2, y2);
-            try{
-                initializeBoard(board, xRugTopLeftCorner, yRugTopLeftCorner, rugLength, p1, p2);
-            } catch (Exception ignored){
+            player1.setLocation(x1, y1);
+            player2.setLocation(x2, y2);
+            try {
+                initializeBoard(board, xRugTopLeftCorner, yRugTopLeftCorner, rugLength, player1, player2);
+            } catch (Exception ignored) {
                 System.out.println("Players can't start inside of the rug! restarting game...");
                 continue;
             }
-            printWhoWinsInLessSteps(board, p1, p2, sizeOfBoard);
-            playingPlayer = p1;
+            printWhoWinsInLessSteps(board, player1, player2, sizeOfBoard);
+            playingPlayer = player1;
             System.out.println("Player 1 is first!");
             Thread.sleep(1000);
 
@@ -53,10 +54,10 @@ public class Main {
                 } catch (Exception ignore) {
                     System.out.println("Illegal move, Your turn is over");
                     // Switch turns
-                    if (playingPlayer == p1) {
-                        playingPlayer = p2;
+                    if (playingPlayer == player1) {
+                        playingPlayer = player2;
                     } else {
-                        playingPlayer = p1;
+                        playingPlayer = player1;
                     }
                     continue;
                 }
@@ -65,19 +66,22 @@ public class Main {
                     break;
                 }
                 // Switch turns
-                if (playingPlayer == p1) {
-                    playingPlayer = p2;
+                if (playingPlayer == player1) {
+                    playingPlayer = player2;
                 } else {
-                    playingPlayer = p1;
+                    playingPlayer = player1;
                 }
             }
-            // Announce the winner and print scoreboard
-            System.out.format("%c is the winner!\n Player%c wins: %d\n Player%c wins: %d\n",
-                    playingPlayer.getPlayerNum(), p1.getPlayerNum(), p1.getNumberOfWins(),
-                    p2.getPlayerNum(), p2.getNumberOfWins());
+            // Announce the winner
+            System.out.format("Player %c has won!\n", playingPlayer.getPlayerNum());
 
-            if (!p1.wantsToPlayAgain(stdin) || !p2.wantsToPlayAgain(stdin)){
+            if (!player1.wantsToPlayAgain(stdin) || !player2.wantsToPlayAgain(stdin)) {
                 isGameOver = true;
+                overallWinner = getOverallWinner(player1, player2);
+                // Announce the overall winner and print scoreboard
+                System.out.format("Player%c wins: %d\nPlayer%c wins: %d\n\nPlayer %c is the winner of the game!\n",
+                        player1.getPlayerNum(), player1.getNumberOfWins(),
+                        player2.getPlayerNum(), player2.getNumberOfWins(),overallWinner.getPlayerNum());
             }
         }
 
@@ -86,34 +90,66 @@ public class Main {
 
     }
 
+    /**
+     *
+     * @param player1 Player 1
+     * @param player2 Player 2
+     * @return A reference to the winning player instance
+     */
+    private static Player getOverallWinner(Player player1, Player player2) {
+        if (player1.getNumberOfWins() > player2.getNumberOfWins()){
+            return player1;
+        }
+        else if (player1.getNumberOfWins() < player2.getNumberOfWins()) {
+            return player2;
+        }
+        else{
+            if (player1.getTotalSteps() < player2.getTotalSteps()) {
+                return player1;
+            }
+            else if (player1.getTotalSteps() > player2.getTotalSteps()) {
+                return player2;
+            }
+            else{
+                if (new Random().nextBoolean()) {
+                    return player1;
+                }
+                else{
+                    return player2;
+                }
+
+            }
+        }
+    }
+
     /** Calculates the closest flag pixel to each player and announces the winner
      *  (the player with the shorter minimal distance)
      *
      * @param board The board is a two dimensional array representing a playing board
-     * @param p1 Instance of player 1
-     * @param p2 Instance of player 2
+     * @param player1 Instance of player 1
+     * @param player2 Instance of player 2
      * @param sizeOfBoard The size of the board
      */
-    static void printWhoWinsInLessSteps(char[][] board, Player p1, Player p2, int sizeOfBoard) {
+    static void printWhoWinsInLessSteps(char[][] board, Player player1, Player player2, int sizeOfBoard) {
         double[] distancesFromPlayer1 = new double[sizeOfBoard*sizeOfBoard];
         double[] distancesFromPlayer2 = new double[sizeOfBoard*sizeOfBoard];
-        for (int y = 0; y < board.length; y++){
-            for (int x = 0; x < board[y].length; x++){
+        for (int y = 0; y < board.length; y++) {
+            for (int x = 0; x < board[y].length; x++) {
                 distancesFromPlayer1[x+y*sizeOfBoard] = (board[x][y] == '*') ?
-                        Math.sqrt(Math.pow(x - p1.getX(), 2) + Math.pow(y - p1.getY(), 2)) : 1000;
+                        Math.abs(x - player1.getX()) + Math.abs(y - player1.getY()) : 1000;
 
                 distancesFromPlayer2[x+y*sizeOfBoard] = (board[x][y] == '*') ?
-                        Math.sqrt(Math.pow(x - p2.getX(), 2) + Math.pow(y - p2.getY(), 2)) : 1000;
+                        Math.abs(x - player2.getX()) + Math.abs(y - player2.getY()) : 1000;
             }
         }
         Arrays.sort(distancesFromPlayer1);
         Arrays.sort(distancesFromPlayer2);
 
         if (distancesFromPlayer1[0] < distancesFromPlayer2[0]){
-            System.out.format("Player %c can win in less steps!\n", p1.getPlayerNum());
+            System.out.format("Player %c can win in less steps!\n", player1.getPlayerNum());
         }
         else if (distancesFromPlayer1[0] > distancesFromPlayer2[0]){
-            System.out.format("Player %c can win in less steps!\n", p2.getPlayerNum());
+            System.out.format("Player %c can win in less steps!\n", player2.getPlayerNum());
         }
         else{
             System.out.println("Both players can win in the same amount of steps");
@@ -129,7 +165,7 @@ public class Main {
      * @param yRugTopLeftCorner Y coordinate of the The top left corner of the rug
      * @return Rug size typed by the user (Special case safeInput for the rug size)
      */
-    static int safeRugInput(Scanner stdin, String message, int boardSize, int xRugTopLeftCorner, int yRugTopLeftCorner){
+    static int safeRugInput(Scanner stdin, String message, int boardSize, int xRugTopLeftCorner, int yRugTopLeftCorner) {
         int result;
         while (true) {
             try {
@@ -176,42 +212,51 @@ public class Main {
      * @param xRugTopLeftCorner X coordinate of the The top left corner of the rug
      * @param yRugTopLeftCorner Y coordinate of the The top left corner of the rug
      * @param rugLength The size of the rug
-     * @param p1 Instance of player 1
-     * @param p2 Instance of player 2
+     * @param player1 Instance of player 1
+     * @param player2 Instance of player 2
      *
      */
-    static void initializeBoard(char[][] board, int xRugTopLeftCorner, int yRugTopLeftCorner, int rugLength, Player p1, Player p2) throws Exception {
+    static void initializeBoard(char[][] board, int xRugTopLeftCorner, int yRugTopLeftCorner, int rugLength, Player player1, Player player2) throws Exception {
         // Initialize board with blank squares
-        for (int y = 0; y < board.length; y++){
-            for (int x = 0; x < board[y].length; x++){
-                board[x][y] = '.';
+        for (int y = 0; y < board.length; y++) {
+            for (int x = 0; x < board[y].length; x++) {
+                board[x][y] = ' ';
             }
         }
 
-        for (int y = xRugTopLeftCorner; y < xRugTopLeftCorner + rugLength; y++){
-            for (int x = yRugTopLeftCorner; x < yRugTopLeftCorner + rugLength; x++){
+        for (int y = xRugTopLeftCorner; y < xRugTopLeftCorner + rugLength; y++) {
+            for (int x = yRugTopLeftCorner; x < yRugTopLeftCorner + rugLength; x++) {
                 board[x][y] = '*';
             }
         }
-        if (board[p1.getX()][p1.getY()] == '*' || board[p2.getX()][p2.getY()] == '*'){
-            throw new Exception();
+        if (board[player1.getX()][player1.getY()] == '*' || board[player2.getX()][player2.getY()] == '*') {
+            throw new Exception("A player cannot begin on the rug");
         }
-        board[p1.getX()][p1.getY()] = p1.getPlayerNum();
-        board[p2.getX()][p2.getY()] = p2.getPlayerNum();
+        board[player1.getX()][player1.getY()] = player1.getPlayerNum();
+        board[player2.getX()][player2.getY()] = player2.getPlayerNum();
     }
 
     /** The function prints the content of the board
      *
      * @param board The board is a two dimensional array representing a playing board
      */
-    static void showBoard(char[][] board){
+    static void showBoard(char[][] board) {
+        for (int i = 0; i < board.length + 2; i++) {
+            System.out.print("# ");
+        }
+        System.out.println();
         for (int y = 0; y < board.length; y++) {
+            System.out.print("# ");
             for (int x = 0; x < board[y].length; x++) {
                 System.out.print(board[x][y]);
-                System.out.print("  ");
+                System.out.print(" ");
             }
-            System.out.println();
+            System.out.println("#");
         }
+        for (int i = 0; i < board.length + 2; i++) {
+            System.out.print("# ");
+        }
+        System.out.println();
     }
 
 }
